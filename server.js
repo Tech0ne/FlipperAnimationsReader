@@ -13,8 +13,6 @@ let flipped;
   const files = await fs.readdir(framesPath);
   flipped = [];
   original = [];
-  let i = 0;
-  console.log(Math.floor(Math.random()*files.length));
   for (let i = 0; i < files.length; i++) {
     const pth = path.join('./frames/', files[i]);
     const fls = await fs.readdir(pth);
@@ -30,7 +28,6 @@ let flipped;
         .reverse()
         .join('')
     });
-    i++;
   }
 })().catch((err) => {
   console.log('Error loading frames');
