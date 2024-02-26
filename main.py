@@ -104,7 +104,7 @@ def load_image(origin_fname, target_fname, w, h):
         encoded_data = data[4:]
         decompressed_data = hs2xbm(encoded_data)
     else:
-        decompressed_data = data[2:]
+        decompressed_data = bytes(data[1:])
     
     unslice(xbm2png(decompressed_data, (w, h)), w // 8).save(target_fname)
 
@@ -117,7 +117,7 @@ def get_path(path):
 
 def main(argv):
     if len(argv) == 1:
-        print(f"""Usage : {argv[0]} [annimation_path]
+        print(f"""Usage : {argv[0]} [annimation_path] <invert>
 
 Retreive PNG format from Flipper Zero .bm files (pass directory containing meta.txt and frames)""")
         return 1
@@ -154,24 +154,25 @@ Retreive PNG format from Flipper Zero .bm files (pass directory containing meta.
         os.mkdir(os.path.join(p[0], p[1] + "_decoded"))
     except FileExistsError:
         print(f"A directory called \"{os.path.join(p[0], p[1] + '_decoded')}\" already exists !!")
-        return 1
+        os.system("rm -rf " + os.path.join(p[0], p[1] + "_decoded"))
+        os.mkdir(os.path.join(p[0], p[1] + "_decoded"))
     frames = []
     for i in range(fms):
         load_image(os.path.join(argv[1], f"frame_{i}.bm"), os.path.join(os.path.join(p[0], p[1] + "_decoded"), f"frame_{i}.png"), width, height)
         frames.append(Image.open(os.path.join(os.path.join(p[0], p[1] + "_decoded"), f"frame_{i}.png")))
     out_frames = [frames[i] for i in frames_order]
-    out_frames[0].save(os.path.join(os.path.join(os.path.join(p[0], p[1] + "_decoded"), "annimated_version.gif")), format="GIF", append_images=frames[1:], save_all=True, fps=fps, duration=1/fps)
-    # 1 4
-    # 2 5
-    # 3 6
-    # 7 8
-    # x = hex(value).split('x')[-1]
-    # while len(x) < 2:
-    #     x = '0' + x
-    # print(eval(f"\"\\u28{x}\""))
+    out_frames[0].save(os.path.join(os.path.join(os.path.join(p[0], p[1] + "_decoded"), "annimated_version.gif")), format="GIF", append_images=frames[1:], save_all=True, loop=0, fps=fps, duration=1/fps)
 
     v = [[0 for _ in range(width + (width % 2))] for _ in range(height + (height % 4))]
+    index = 0
+    ind = 0
+    if not os.path.isdir("./frames/"):
+        os.mkdir("./frames/")
+    while os.path.isdir(f"./frames/{index}/"):
+        index += 1
+    os.mkdir(f"./frames/{index}/")
     for f in out_frames:
+        fp = open(f"./frames/{index}/frame_{ind}.txt", 'wb+')
         for x in range(f.width):
             for y in range(f.height):
                 v[y][x] = int(f.getpixel((x, y)) == (0, 0, 0))
@@ -189,9 +190,13 @@ Retreive PNG format from Flipper Zero .bm files (pass directory containing meta.
                 x = hex(value).split('x')[-1]
                 while len(x) < 2:
                     x = '0' + x
+                fp.write(eval(f"\"\\u28{x}\"").encode())
                 print(eval(f"\"\\u28{x}\""), end='')
+            fp.write(b'\n')
             print()
         time.sleep(1 / fps)
+        fp.close()
+        ind += 1
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
